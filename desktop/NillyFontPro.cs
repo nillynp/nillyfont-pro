@@ -32,8 +32,8 @@ using Microsoft.Win32;
 [assembly: AssemblyProduct("NillyFont Pro")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Nilly graphics (Sotiris Christos) — https://nillygraphics.com/")]
 [assembly: AssemblyTrademark("Nilly graphics / Nillygraphics — Sotiris Christos")]
-[assembly: AssemblyVersion("1.0.1.0")]
-[assembly: AssemblyFileVersion("1.0.1.0")]
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
 
 namespace NillyFontPro
 {
@@ -266,7 +266,7 @@ namespace NillyFontPro
         private readonly Label _lblTitle, _lblSub, _lblStatus, _lblSizeVal;
         private readonly TextBox _txtSearch, _txtSpecimen;
         private readonly Button _btnGreek, _btnBold, _btnItalic, _btnSizeDown, _btnSizeUp, _btnCompare, _btnInstall, _btnTheme, _btnInfo;
-        private readonly Button _btnSetA, _btnSetB, _btnCopyName;
+        private readonly Button _btnSetA, _btnSetB, _btnCopyName, _btnSendNote;
         private readonly DoubleBufferedListBox _list;
         private readonly DoubleBufferedPanel _comparePanel;
         private readonly LinkLabel _lnkBrand;
@@ -342,8 +342,9 @@ namespace NillyFontPro
             _btnSetA = MkBtn("Ορισμός A", 82, "Βάλε την επιλεγμένη στη θέση A σύγκρισης", delegate { SetCompareSlot(true); });
             _btnSetB = MkBtn("Ορισμός B", 82, "Βάλε την επιλεγμένη στη θέση B σύγκρισης", delegate { SetCompareSlot(false); });
             _btnCopyName = MkBtn("Αντιγραφή", 84, "Αντιγραφή ονόματος γραμματοσειράς", delegate { CopySelectedName(); });
+            _btnSendNote = MkBtn("↗ Note", 66, "Αποστολή Font Spec / Σύγκρισης A-B σε NillyNote Pro", delegate { SendSpecToNillyNote(); });
 
-            _ctrlBar.Controls.AddRange(new Control[] { _txtSpecimen, _btnSizeDown, _lblSizeVal, _btnSizeUp, _btnBold, _btnItalic, _btnSetA, _btnSetB, _btnCopyName });
+            _ctrlBar.Controls.AddRange(new Control[] { _txtSpecimen, _btnSizeDown, _lblSizeVal, _btnSizeUp, _btnBold, _btnItalic, _btnSetA, _btnSetB, _btnCopyName, _btnSendNote });
             _ctrlBar.Resize += delegate { LayoutCtrlBar(); };
 
             // Owner-Drawn Font Specimen List (smooth even for 1500+ fonts!)
@@ -442,11 +443,11 @@ namespace NillyFontPro
 
         private void LayoutCtrlBar()
         {
-            int rightW = 34 + 44 + 34 + 30 + 30 + 82 + 82 + 84 + 42;
-            int specW = Math.Max(160, _ctrlBar.Width - rightW - 22);
+            int rightW = 34 + 44 + 34 + 30 + 30 + 82 + 82 + 84 + 66 + 48;
+            int specW = Math.Max(140, _ctrlBar.Width - rightW - 22);
             _txtSpecimen.SetBounds(10, 9, specW, 26);
             int x = _txtSpecimen.Right + 10;
-            Control[] ctrls = new Control[] { _btnSizeDown, _lblSizeVal, _btnSizeUp, _btnBold, _btnItalic, _btnSetA, _btnSetB, _btnCopyName };
+            Control[] ctrls = new Control[] { _btnSizeDown, _lblSizeVal, _btnSizeUp, _btnBold, _btnItalic, _btnSetA, _btnSetB, _btnCopyName, _btnSendNote };
             for (int i = 0; i < ctrls.Length; i++)
             {
                 ctrls[i].Location = new Point(x, 8);
@@ -742,6 +743,55 @@ namespace NillyFontPro
             StyleBtn(_btnSetA, false, _cyan);
             StyleBtn(_btnSetB, false, _accent);
             StyleBtn(_btnCopyName, false, _green);
+            StyleBtn(_btnSendNote, false, _accent);
+        }
+
+        private static string FindSiblingExe(string folder, string exeName)
+        {
+            try
+            {
+                string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"NillySuite\" + folder + @"\" + exeName);
+                if (File.Exists(appData)) return appData;
+                DirectoryInfo par = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\'));
+                if (par != null)
+                {
+                    string sib = Path.Combine(Path.Combine(par.FullName, folder), exeName);
+                    if (File.Exists(sib)) return sib;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private void SendSpecToNillyNote()
+        {
+            FontEntry sel = _list.SelectedItem as FontEntry;
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("=== NillyFont Pro — Typography Spec ===");
+            sb.AppendLine("created by Nilly graphics (Sotiris Christos) — nillygraphics.com");
+            sb.AppendLine("");
+            if (sel != null)
+                sb.AppendLine(string.Format("Επιλεγμένη Γραμματοσειρά:  {0}  ({1})", sel.Name, sel.HasGreek ? "Υποστηρίζει Ελληνικά" : "Latin only"));
+            sb.AppendLine(string.Format("Σύγκριση [A]: {0}   |   [B]: {1}", _compareA, _compareB));
+            sb.AppendLine(string.Format("Μέγεθος: {0} pt  |  Bold: {1}  |  Italic: {2}", (int)_sampleSize, _bold ? "Ναι" : "Όχι", _italic ? "Ναι" : "Όχι"));
+            sb.AppendLine("Κείμενο δοκιμής: " + _txtSpecimen.Text);
+            sb.AppendLine(string.Format("Σύνολο στο PC: {0} γραμματοσειρές ({1} με Ελληνικά)", _allFonts.Count, _greekCount));
+
+            string txt = sb.ToString();
+            string noteExe = FindSiblingExe("NillyNotePro", "NillyNotePro.exe");
+            if (noteExe != null)
+            {
+                try
+                {
+                    string tmp = Path.Combine(Path.GetTempPath(), "NillyFont_Spec_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
+                    File.WriteAllText(tmp, txt, new UTF8Encoding(false));
+                    Process.Start(new ProcessStartInfo(noteExe, "\"" + tmp + "\"") { WorkingDirectory = Path.GetDirectoryName(noteExe), UseShellExecute = true });
+                    _lblStatus.Text = "↗ Το Typography Spec εστάλη στο NillyNote Pro!";
+                    return;
+                }
+                catch { }
+            }
+            try { Clipboard.SetText(txt); _lblStatus.Text = "✓ Αντιγράφηκε το Font Spec στο πρόχειρο."; } catch { }
         }
 
         private void StyleBtn(Button b, bool primary, Color accent)
