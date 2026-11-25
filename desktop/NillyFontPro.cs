@@ -32,8 +32,8 @@ using Microsoft.Win32;
 [assembly: AssemblyProduct("NillyFont Pro")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Nilly graphics (Sotiris Christos) — https://nillygraphics.com/")]
 [assembly: AssemblyTrademark("Nilly graphics / Nillygraphics — Sotiris Christos")]
-[assembly: AssemblyVersion("1.1.1.0")]
-[assembly: AssemblyFileVersion("1.1.1.0")]
+[assembly: AssemblyVersion("1.2.0.0")]
+[assembly: AssemblyFileVersion("1.2.0.0")]
 
 namespace NillyFontPro
 {
@@ -284,8 +284,11 @@ namespace NillyFontPro
         public int TotalFontCount { get { return _allFonts.Count; } }
         public int GreekFontCount { get { return _greekCount; } }
 
-        public MainForm(bool smokeMode)
+        public MainForm(bool smokeMode) : this(smokeMode, null) { }
+
+        public MainForm(bool smokeMode, string[] initialFontFiles)
         {
+            _dark = ReadSuiteDark(true);
             Text = "NillyFont Pro — Ultra-Light Font Manager & Greek Typography Tester | Nilly graphics";
             Size = new Size(1120, 700);
             MinimumSize = new Size(780, 500);
@@ -300,6 +303,19 @@ namespace NillyFontPro
                 string[] files = e.Data.GetData(DataFormats.FileDrop) as string[];
                 if (files != null) InstallFontFiles(files);
             };
+
+            if (initialFontFiles != null && initialFontFiles.Length > 0 && !smokeMode)
+            {
+                Shown += delegate
+                {
+                    if (MessageBox.Show(this,
+                        "Εγκατάσταση " + initialFontFiles.Length + " γραμματοσειράς(ών) Zero-Admin στα Windows Fonts;\n\n" + Path.GetFileName(initialFontFiles[0]),
+                        "NillyFont Pro", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    {
+                        InstallFontFiles(initialFontFiles);
+                    }
+                };
+            }
 
             string icoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "NillyFontPro.ico");
             if (File.Exists(icoPath))
@@ -750,6 +766,22 @@ namespace NillyFontPro
             StyleBtn(_btnSendNote, false, _accent);
         }
 
+        private static bool ReadSuiteDark(bool fallback)
+        {
+            try
+            {
+                string p = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"NillySuite\suite.theme");
+                if (File.Exists(p))
+                {
+                    string s = File.ReadAllText(p, Encoding.ASCII).Trim();
+                    if (s.Equals("light", StringComparison.OrdinalIgnoreCase)) return false;
+                    if (s.Equals("dark", StringComparison.OrdinalIgnoreCase)) return true;
+                }
+            }
+            catch { }
+            return fallback;
+        }
+
         private static string FindSiblingExe(string folder, string exeName)
         {
             try
@@ -886,7 +918,19 @@ namespace NillyFontPro
             if (args != null && args.Length > 0 && args[0].Equals("--test-smoke", StringComparison.OrdinalIgnoreCase))
                 return RunSmoke(args.Length > 1 ? args[1] : null, args.Length > 2 ? args[2] : null);
 
-            Application.Run(new MainForm(false));
+            List<string> fontFiles = new List<string>();
+            if (args != null)
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (File.Exists(args[i]))
+                    {
+                        string ext = Path.GetExtension(args[i]).ToLowerInvariant();
+                        if (ext == ".ttf" || ext == ".otf") fontFiles.Add(args[i]);
+                    }
+                }
+            }
+            Application.Run(new MainForm(false, fontFiles.Count > 0 ? fontFiles.ToArray() : null));
             return 0;
         }
 
