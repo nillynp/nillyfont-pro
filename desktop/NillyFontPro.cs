@@ -32,8 +32,8 @@ using Microsoft.Win32;
 [assembly: AssemblyProduct("NillyFont Pro")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Nilly graphics (Sotiris Christos) — https://nillygraphics.com/")]
 [assembly: AssemblyTrademark("Nilly graphics / Nillygraphics — Sotiris Christos")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
+[assembly: AssemblyFileVersion("1.0.1.0")]
 
 namespace NillyFontPro
 {
@@ -308,14 +308,13 @@ namespace NillyFontPro
                 try { Icon = new Icon(icoPath); } catch { }
             }
 
-            // Header
+            // Responsive Header (auto 1-row >= 980px, 2-row < 980px — never clips!)
             _header = new Panel { Dock = DockStyle.Top, Height = 46 };
             _logoBox = new PictureBox { Size = new Size(26, 26), Location = new Point(12, 10), SizeMode = PictureBoxSizeMode.Zoom, Image = _logoBmp };
-            _lblTitle = new Label { Text = "NillyFont Pro", AutoSize = true, Location = new Point(44, 7), Font = _fTitle };
-            _lblSub = new Label { Text = "Ultra-Light Font Manager · True Greek Filter · 0 MB Idle RAM", AutoSize = true, Location = new Point(45, 25), Font = new Font("Segoe UI", 7.6f) };
+            _lblTitle = new Label { Text = "NillyFont Pro", AutoSize = true, Location = new Point(44, 7), Font = _fTitle, UseMnemonic = false };
+            _lblSub = new Label { Text = "Ultra-Light Font Manager · True Greek Filter · 0 MB Idle RAM", AutoSize = true, Location = new Point(45, 25), Font = new Font("Segoe UI", 7.6f), UseMnemonic = false };
 
-            FlowLayoutPanel rightHdr = new FlowLayoutPanel { Dock = DockStyle.Right, AutoSize = true, WrapContents = false, Padding = new Padding(0, 8, 10, 0) };
-            _txtSearch = new TextBox { Width = 195, Height = 26, BorderStyle = BorderStyle.FixedSingle, Font = _fUi, Margin = new Padding(0, 2, 6, 0) };
+            _txtSearch = new TextBox { Width = 195, Height = 26, BorderStyle = BorderStyle.FixedSingle, Font = _fUi };
             _txtSearch.TextChanged += delegate { ApplyFilter(); };
             _txtSearch.HandleCreated += delegate { Native.SetCue(_txtSearch, "Αναζήτηση font (Ctrl+F)..."); };
             _btnGreek = MkBtn("Ω Μόνο Ελληνικά", 136, "Εμφάνιση ΜΟΝΟ γραμματοσειρών με πραγματικούς ελληνικούς χαρακτήρες (GDI Unicode Check)", delegate { ToggleGreekOnly(); });
@@ -323,8 +322,8 @@ namespace NillyFontPro
             _btnInstall = MkBtn("+ Εγκατάσταση .ttf/.otf", 162, "Εγκατάσταση γραμματοσειράς χωρίς Admin (HKCU) ή Drag & Drop", delegate { BrowseInstallFont(); });
             _btnTheme = MkBtn("◐", 32, "Αλλαγή Dark / Light θέματος", delegate { _dark = !_dark; ApplyTheme(); });
             _btnInfo = MkBtn("i", 32, "Ultra-Light Specs & Πληροφορίες", delegate { ShowInfoDialog(); });
-            rightHdr.Controls.AddRange(new Control[] { _txtSearch, _btnGreek, _btnCompare, _btnInstall, _btnTheme, _btnInfo });
-            _header.Controls.AddRange(new Control[] { _logoBox, _lblTitle, _lblSub, rightHdr });
+            _header.Controls.AddRange(new Control[] { _logoBox, _lblTitle, _lblSub, _txtSearch, _btnGreek, _btnCompare, _btnInstall, _btnTheme, _btnInfo });
+            _header.Resize += delegate { LayoutHeader(); };
 
             // Specimen Control Bar
             _ctrlBar = new Panel { Dock = DockStyle.Top, Height = 44, Padding = new Padding(10, 7, 10, 7) };
@@ -391,7 +390,41 @@ namespace NillyFontPro
 
             LoadInstalledFonts();
             ApplyTheme();
+            LayoutHeader();
             LayoutCtrlBar();
+        }
+
+        private void LayoutHeader()
+        {
+            int w = Math.Max(600, _header.ClientSize.Width);
+            int pad = 10, gap = 5;
+            if (w >= 990)
+            {
+                if (_header.Height != 46) _header.Height = 46;
+                int y = 9;
+                int rx = w - pad;
+                rx -= _btnInfo.Width; _btnInfo.Location = new Point(rx, y); rx -= gap;
+                rx -= _btnTheme.Width; _btnTheme.Location = new Point(rx, y); rx -= gap;
+                rx -= _btnInstall.Width; _btnInstall.Location = new Point(rx, y); rx -= gap;
+                rx -= _btnCompare.Width; _btnCompare.Location = new Point(rx, y); rx -= gap;
+                rx -= _btnGreek.Width; _btnGreek.Location = new Point(rx, y); rx -= gap;
+                int sw = Math.Max(130, Math.Min(205, rx - 305));
+                _txtSearch.SetBounds(rx - sw, y + 1, sw, 26);
+            }
+            else
+            {
+                if (_header.Height != 84) _header.Height = 84;
+                int rx = w - pad;
+                rx -= _btnInfo.Width; _btnInfo.Location = new Point(rx, 9); rx -= gap;
+                rx -= _btnTheme.Width; _btnTheme.Location = new Point(rx, 9);
+                int y2 = 48;
+                int lx = pad;
+                _btnGreek.Location = new Point(lx, y2); lx += _btnGreek.Width + gap;
+                _btnCompare.Location = new Point(lx, y2); lx += _btnCompare.Width + gap;
+                _btnInstall.Location = new Point(lx, y2); lx += _btnInstall.Width + gap;
+                int sw = Math.Max(110, (w - pad) - lx);
+                _txtSearch.SetBounds(lx, y2 + 1, sw, 26);
+            }
         }
 
         private Button MkBtn(string txt, int w, string tip, EventHandler click)
@@ -737,7 +770,7 @@ namespace NillyFontPro
 
                 PictureBox pic = new PictureBox { Size = new Size(42, 42), Location = new Point(18, 16), SizeMode = PictureBoxSizeMode.Zoom, Image = _logoBmp };
                 Label hdr = new Label { Text = "NillyFont Pro v1.0", Location = new Point(70, 16), AutoSize = true, Font = new Font("Segoe UI", 13.0f, FontStyle.Bold) };
-                Label sub = new Label { Text = "Ultra-Light Font Manager, Live Specimen & True Greek Glyph Filter", Location = new Point(72, 42), AutoSize = true, Font = _fSmall, ForeColor = _accent };
+                Label sub = new Label { Text = "Ultra-Light Font Manager, Live Specimen & True Greek Glyph Filter", Location = new Point(72, 42), AutoSize = true, Font = _fSmall, ForeColor = _accent, UseMnemonic = false };
 
                 Panel card = new Panel { Location = new Point(18, 72), Size = new Size(474, 185), BackColor = _bgPanel };
                 Label specs = new Label
