@@ -32,8 +32,8 @@ using Microsoft.Win32;
 [assembly: AssemblyProduct("NillyFont Pro")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Nilly graphics (Sotiris Christos) — https://nillygraphics.com/")]
 [assembly: AssemblyTrademark("Nilly graphics / Nillygraphics — Sotiris Christos")]
-[assembly: AssemblyVersion("1.1.0.0")]
-[assembly: AssemblyFileVersion("1.1.0.0")]
+[assembly: AssemblyVersion("1.1.1.0")]
+[assembly: AssemblyFileVersion("1.1.1.0")]
 
 namespace NillyFontPro
 {
@@ -552,8 +552,12 @@ namespace NillyFontPro
         {
             FontEntry sel = _list.SelectedItem as FontEntry;
             if (sel == null) return;
-            Clipboard.SetText(sel.Name);
-            _lblStatus.Text = "✓ Αντιγράφηκε το όνομα γραμματοσειράς: " + sel.Name;
+            try
+            {
+                Clipboard.SetText(sel.Name);
+                _lblStatus.Text = "✓ Αντιγράφηκε το όνομα γραμματοσειράς: " + sel.Name;
+            }
+            catch { _lblStatus.Text = "⚠ Το πρόχειρο είναι απασχολημένο. Δοκίμασε ξανά."; }
         }
 
         private void BrowseInstallFont()
