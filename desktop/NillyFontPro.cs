@@ -32,8 +32,8 @@ using Microsoft.Win32;
 [assembly: AssemblyProduct("NillyFont Pro")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Nilly graphics (Sotiris Christos) — https://nillygraphics.com/")]
 [assembly: AssemblyTrademark("Nilly graphics / Nillygraphics — Sotiris Christos")]
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyVersion("1.2.1.0")]
+[assembly: AssemblyFileVersion("1.2.1.0")]
 
 namespace NillyFontPro
 {
@@ -280,6 +280,7 @@ namespace NillyFontPro
         private readonly Font _fUi = new Font("Segoe UI", 9.0f);
         private readonly Font _fBold = new Font("Segoe UI", 9.0f, FontStyle.Bold);
         private readonly Font _fSmall = new Font("Segoe UI", 8.2f);
+        private readonly Font _fBadge = new Font("Segoe UI", 7.6f, FontStyle.Bold);
 
         public int TotalFontCount { get { return _allFonts.Count; } }
         public int GreekFontCount { get { return _greekCount; } }
@@ -654,7 +655,7 @@ namespace NillyFontPro
 
             string badge = fe.HasGreek ? "✓ ΕΛΛΗΝΙΚΑ" : "LATIN ONLY";
             Color badgeCol = fe.HasGreek ? _green : _fgMuted;
-            TextRenderer.DrawText(g, badge, new Font("Segoe UI", 7.6f, FontStyle.Bold), hdrR, badgeCol, TextFormatFlags.Right);
+            TextRenderer.DrawText(g, badge, _fBadge, hdrR, badgeCol, TextFormatFlags.Right);
 
             // Live Specimen Preview
             string sample = string.IsNullOrEmpty(_txtSpecimen.Text) ? "ΑΒΓΔΕΖΗΘ αβγδεζηθ AaBbCc 0123456789" : _txtSpecimen.Text;
@@ -855,7 +856,7 @@ namespace NillyFontPro
                 Native.SetDarkTitlebar(dlg.Handle, _dark);
 
                 PictureBox pic = new PictureBox { Size = new Size(42, 42), Location = new Point(18, 16), SizeMode = PictureBoxSizeMode.Zoom, Image = _logoBmp };
-                Label hdr = new Label { Text = "NillyFont Pro v1.0", Location = new Point(70, 16), AutoSize = true, Font = new Font("Segoe UI", 13.0f, FontStyle.Bold) };
+                Label hdr = new Label { Text = "NillyFont Pro v1.2.1", Location = new Point(70, 16), AutoSize = true, Font = new Font("Segoe UI", 13.0f, FontStyle.Bold) };
                 Label sub = new Label { Text = "Ultra-Light Font Manager, Live Specimen & True Greek Glyph Filter", Location = new Point(72, 42), AutoSize = true, Font = _fSmall, ForeColor = _accent, UseMnemonic = false };
 
                 Panel card = new Panel { Location = new Point(18, 72), Size = new Size(474, 185), BackColor = _bgPanel };
@@ -901,7 +902,7 @@ namespace NillyFontPro
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) { if (_logoBmp != null) _logoBmp.Dispose(); _tip.Dispose(); }
+            if (disposing) { if (_logoBmp != null) _logoBmp.Dispose(); _fTitle.Dispose(); _fUi.Dispose(); _fBold.Dispose(); _fSmall.Dispose(); _fBadge.Dispose(); _tip.Dispose(); }
             base.Dispose(disposing);
         }
     }
