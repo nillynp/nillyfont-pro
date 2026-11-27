@@ -32,8 +32,8 @@ using Microsoft.Win32;
 [assembly: AssemblyProduct("NillyFont Pro")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Nilly graphics (Sotiris Christos) — https://nillygraphics.com/")]
 [assembly: AssemblyTrademark("Nilly graphics / Nillygraphics — Sotiris Christos")]
-[assembly: AssemblyVersion("1.2.1.0")]
-[assembly: AssemblyFileVersion("1.2.1.0")]
+[assembly: AssemblyVersion("1.2.2.0")]
+[assembly: AssemblyFileVersion("1.2.2.0")]
 
 namespace NillyFontPro
 {
@@ -265,8 +265,8 @@ namespace NillyFontPro
         private readonly PictureBox _logoBox;
         private readonly Label _lblTitle, _lblSub, _lblStatus, _lblSizeVal;
         private readonly TextBox _txtSearch, _txtSpecimen;
-        private readonly Button _btnGreek, _btnBold, _btnItalic, _btnSizeDown, _btnSizeUp, _btnCompare, _btnInstall, _btnTheme, _btnInfo;
-        private readonly Button _btnSetA, _btnSetB, _btnCopyName, _btnSendNote;
+        private readonly AkButton _btnGreek, _btnBold, _btnItalic, _btnSizeDown, _btnSizeUp, _btnCompare, _btnInstall, _btnTheme, _btnInfo;
+        private readonly AkButton _btnSetA, _btnSetB, _btnCopyName, _btnSendNote;
         private readonly DoubleBufferedListBox _list;
         private readonly DoubleBufferedPanel _comparePanel;
         private readonly LinkLabel _lnkBrand;
@@ -325,25 +325,33 @@ namespace NillyFontPro
                 try { Icon = new Icon(icoPath); } catch { }
             }
 
-            // Responsive Header (auto 1-row >= 980px, 2-row < 980px — never clips!)
-            _header = new Panel { Dock = DockStyle.Top, Height = 46 };
-            _logoBox = new PictureBox { Size = new Size(26, 26), Location = new Point(12, 10), SizeMode = PictureBoxSizeMode.Zoom, Image = _logoBmp };
+            // Responsive Ariakit Header (auto 1-row >= 980px, 2-row < 980px — never clips!)
+            _header = new Panel { Dock = DockStyle.Top, Height = 52 };
+            _header.Paint += delegate(object s, PaintEventArgs pe)
+            {
+                using (Pen p = new Pen(_border)) pe.Graphics.DrawLine(p, 0, _header.Height - 1, _header.Width, _header.Height - 1);
+            };
+            _logoBox = new PictureBox { Size = new Size(26, 26), Location = new Point(12, 12), SizeMode = PictureBoxSizeMode.Zoom, Image = _logoBmp };
             _lblTitle = new Label { Text = "NillyFont Pro", AutoSize = true, Location = new Point(44, 7), Font = _fTitle, UseMnemonic = false };
-            _lblSub = new Label { Text = "Ultra-Light Font Manager · True Greek Filter · 0 MB Idle RAM", AutoSize = true, Location = new Point(45, 25), Font = new Font("Segoe UI", 7.6f), UseMnemonic = false };
+            _lblSub = new Label { Text = "Ultra-Light Font Manager · True Greek Filter", AutoSize = true, Location = new Point(45, 29), Font = new Font("Segoe UI", 7.6f), UseMnemonic = false };
 
             _txtSearch = new TextBox { Width = 195, Height = 26, BorderStyle = BorderStyle.FixedSingle, Font = _fUi };
             _txtSearch.TextChanged += delegate { ApplyFilter(); };
             _txtSearch.HandleCreated += delegate { Native.SetCue(_txtSearch, "Αναζήτηση font (Ctrl+F)..."); };
-            _btnGreek = MkBtn("Ω Μόνο Ελληνικά", 136, "Εμφάνιση ΜΟΝΟ γραμματοσειρών με πραγματικούς ελληνικούς χαρακτήρες (GDI Unicode Check)", delegate { ToggleGreekOnly(); });
-            _btnCompare = MkBtn("◫ Σύγκριση A/B", 125, "Σύγκριση 2 γραμματοσειρών δίπλα-δίπλα", delegate { ToggleCompare(); });
-            _btnInstall = MkBtn("+ Εγκατάσταση .ttf/.otf", 162, "Εγκατάσταση γραμματοσειράς χωρίς Admin (HKCU) ή Drag & Drop", delegate { BrowseInstallFont(); });
-            _btnTheme = MkBtn("◐", 32, "Αλλαγή Dark / Light θέματος", delegate { _dark = !_dark; ApplyTheme(); });
-            _btnInfo = MkBtn("i", 32, "Ultra-Light Specs & Πληροφορίες", delegate { ShowInfoDialog(); });
+            _btnGreek = MkBtn("Ελληνικά", 104, AkKind.Secondary, AkIcon.Filter, "Εμφάνιση ΜΟΝΟ γραμματοσειρών με πραγματικούς ελληνικούς χαρακτήρες (GDI Unicode Check)", delegate { ToggleGreekOnly(); });
+            _btnCompare = MkBtn("Σύγκριση A/B", 128, AkKind.Secondary, AkIcon.Split, "Σύγκριση 2 γραμματοσειρών δίπλα-δίπλα", delegate { ToggleCompare(); });
+            _btnInstall = MkBtn("Εγκατάσταση", 124, AkKind.Primary, AkIcon.Plus, "Εγκατάσταση γραμματοσειράς (.ttf/.otf) χωρίς Admin (HKCU) ή Drag & Drop", delegate { BrowseInstallFont(); });
+            _btnTheme = MkBtn("", 32, AkKind.Secondary, AkIcon.Sun, "Αλλαγή Dark / Light θέματος", delegate { _dark = !_dark; ApplyTheme(); });
+            _btnInfo = MkBtn("", 32, AkKind.Ghost, AkIcon.Info, "Ultra-Light Specs & Πληροφορίες", delegate { ShowInfoDialog(); });
             _header.Controls.AddRange(new Control[] { _logoBox, _lblTitle, _lblSub, _txtSearch, _btnGreek, _btnCompare, _btnInstall, _btnTheme, _btnInfo });
-            _header.Resize += delegate { LayoutHeader(); };
+            _header.Resize += delegate { LayoutHeader(); _header.Invalidate(); };
 
-            // Specimen Control Bar
-            _ctrlBar = new Panel { Dock = DockStyle.Top, Height = 44, Padding = new Padding(10, 7, 10, 7) };
+            // Responsive Specimen Control Bar (1-row >= 960px, 2-row < 960px — zero overflow!)
+            _ctrlBar = new Panel { Dock = DockStyle.Top, Height = 44 };
+            _ctrlBar.Paint += delegate(object s, PaintEventArgs pe)
+            {
+                using (Pen p = new Pen(_border)) pe.Graphics.DrawLine(p, 0, _ctrlBar.Height - 1, _ctrlBar.Width, _ctrlBar.Height - 1);
+            };
             _txtSpecimen = new TextBox
             {
                 Text = "Χρωμοδομή · Nilly graphics — ΑΒΓΔΕΖΗΘ αβγδεζηθ 0123456789",
@@ -351,18 +359,19 @@ namespace NillyFontPro
             };
             _txtSpecimen.TextChanged += delegate { _list.Invalidate(); _comparePanel.Invalidate(); };
 
-            _btnSizeDown = MkBtn("A-", 34, "Μείωση μεγέθους", delegate { ChangeSize(-2f); });
+            _btnSizeDown = MkBtn("A-", 34, AkKind.Secondary, AkIcon.None, "Μείωση μεγέθους", delegate { ChangeSize(-2f); });
             _lblSizeVal = new Label { Text = "22 pt", Width = 44, Height = 28, TextAlign = ContentAlignment.MiddleCenter, Font = _fBold };
-            _btnSizeUp = MkBtn("A+", 34, "Αύξηση μεγέθους", delegate { ChangeSize(2f); });
-            _btnBold = MkBtn("B", 30, "Έντονα (Bold)", delegate { _bold = !_bold; StyleButtons(); _list.Invalidate(); _comparePanel.Invalidate(); });
-            _btnItalic = MkBtn("I", 30, "Πλάγια (Italic)", delegate { _italic = !_italic; StyleButtons(); _list.Invalidate(); _comparePanel.Invalidate(); });
-            _btnSetA = MkBtn("Ορισμός A", 82, "Βάλε την επιλεγμένη στη θέση A σύγκρισης", delegate { SetCompareSlot(true); });
-            _btnSetB = MkBtn("Ορισμός B", 82, "Βάλε την επιλεγμένη στη θέση B σύγκρισης", delegate { SetCompareSlot(false); });
-            _btnCopyName = MkBtn("Αντιγραφή", 84, "Αντιγραφή ονόματος γραμματοσειράς", delegate { CopySelectedName(); });
-            _btnSendNote = MkBtn("↗ Note", 66, "Αποστολή Font Spec / Σύγκρισης A-B σε NillyNote Pro", delegate { SendSpecToNillyNote(); });
+            _btnSizeUp = MkBtn("A+", 34, AkKind.Secondary, AkIcon.None, "Αύξηση μεγέθους", delegate { ChangeSize(2f); });
+            _btnBold = MkBtn("B", 30, AkKind.Secondary, AkIcon.None, "Έντονα (Bold)", delegate { _bold = !_bold; StyleButtons(); _list.Invalidate(); _comparePanel.Invalidate(); });
+            _btnItalic = MkBtn("I", 30, AkKind.Secondary, AkIcon.None, "Πλάγια (Italic)", delegate { _italic = !_italic; StyleButtons(); _list.Invalidate(); _comparePanel.Invalidate(); });
+            _btnItalic.Font = new Font("Georgia", 9.5f, FontStyle.Bold | FontStyle.Italic);
+            _btnSetA = MkBtn("Ορισμός A", 82, AkKind.Secondary, AkIcon.None, "Βάλε την επιλεγμένη στη θέση A σύγκρισης", delegate { SetCompareSlot(true); });
+            _btnSetB = MkBtn("Ορισμός B", 82, AkKind.Secondary, AkIcon.None, "Βάλε την επιλεγμένη στη θέση B σύγκρισης", delegate { SetCompareSlot(false); });
+            _btnCopyName = MkBtn("Αντιγραφή", 112, AkKind.Secondary, AkIcon.Copy, "Αντιγραφή ονόματος γραμματοσειράς", delegate { CopySelectedName(); });
+            _btnSendNote = MkBtn("Note", 74, AkKind.AccentOutline, AkIcon.External, "Αποστολή Font Spec / Σύγκρισης A-B σε NillyNote Pro", delegate { SendSpecToNillyNote(); });
 
             _ctrlBar.Controls.AddRange(new Control[] { _txtSpecimen, _btnSizeDown, _lblSizeVal, _btnSizeUp, _btnBold, _btnItalic, _btnSetA, _btnSetB, _btnCopyName, _btnSendNote });
-            _ctrlBar.Resize += delegate { LayoutCtrlBar(); };
+            _ctrlBar.Resize += delegate { LayoutCtrlBar(); _ctrlBar.Invalidate(); };
 
             // Owner-Drawn Font Specimen List (smooth even for 1500+ fonts!)
             _list = new DoubleBufferedListBox
@@ -382,8 +391,12 @@ namespace NillyFontPro
             _comparePanel.Paint += ComparePanel_Paint;
 
             // Status Bar
-            _statusBar = new Panel { Dock = DockStyle.Bottom, Height = 26, Padding = new Padding(10, 0, 10, 0) };
-            _lblStatus = new Label { Dock = DockStyle.Fill, Font = _fSmall, TextAlign = ContentAlignment.MiddleLeft };
+            _statusBar = new Panel { Dock = DockStyle.Bottom, Height = 28, Padding = new Padding(12, 0, 12, 0) };
+            _statusBar.Paint += delegate(object s, PaintEventArgs pe)
+            {
+                using (Pen p = new Pen(_border)) pe.Graphics.DrawLine(p, 0, 0, _statusBar.Width, 0);
+            };
+            _lblStatus = new Label { Dock = DockStyle.Fill, Font = _fSmall, TextAlign = ContentAlignment.MiddleLeft, UseMnemonic = false, AutoEllipsis = true };
             _lnkBrand = new LinkLabel
             {
                 Text = "created by Nilly graphics (Sotiris Christos) — nillygraphics.com",
@@ -415,27 +428,30 @@ namespace NillyFontPro
         private void LayoutHeader()
         {
             int w = Math.Max(600, _header.ClientSize.Width);
-            int pad = 10, gap = 5;
-            if (w >= 990)
+            int pad = 12, gap = 6;
+            if (_lblSub != null) _lblSub.Visible = (w >= 860);
+            if (_lnkBrand != null) _lnkBrand.Visible = (w >= 920);
+            if (w >= 960)
             {
-                if (_header.Height != 46) _header.Height = 46;
-                int y = 9;
+                if (_header.Height != 52) _header.Height = 52;
+                int y = 12;
                 int rx = w - pad;
                 rx -= _btnInfo.Width; _btnInfo.Location = new Point(rx, y); rx -= gap;
                 rx -= _btnTheme.Width; _btnTheme.Location = new Point(rx, y); rx -= gap;
                 rx -= _btnInstall.Width; _btnInstall.Location = new Point(rx, y); rx -= gap;
                 rx -= _btnCompare.Width; _btnCompare.Location = new Point(rx, y); rx -= gap;
                 rx -= _btnGreek.Width; _btnGreek.Location = new Point(rx, y); rx -= gap;
-                int sw = Math.Max(130, Math.Min(205, rx - 305));
+                int brandRight = _lblSub.Visible ? Math.Max(_lblTitle.Right, _lblSub.Right) + 14 : (_lblTitle.Right + 14);
+                int sw = Math.Max(120, Math.Min(210, rx - brandRight));
                 _txtSearch.SetBounds(rx - sw, y + 1, sw, 26);
             }
             else
             {
-                if (_header.Height != 84) _header.Height = 84;
+                if (_header.Height != 88) _header.Height = 88;
                 int rx = w - pad;
-                rx -= _btnInfo.Width; _btnInfo.Location = new Point(rx, 9); rx -= gap;
-                rx -= _btnTheme.Width; _btnTheme.Location = new Point(rx, 9);
-                int y2 = 48;
+                rx -= _btnInfo.Width; _btnInfo.Location = new Point(rx, 11); rx -= gap;
+                rx -= _btnTheme.Width; _btnTheme.Location = new Point(rx, 11);
+                int y2 = 50;
                 int lx = pad;
                 _btnGreek.Location = new Point(lx, y2); lx += _btnGreek.Width + gap;
                 _btnCompare.Location = new Point(lx, y2); lx += _btnCompare.Width + gap;
@@ -445,14 +461,14 @@ namespace NillyFontPro
             }
         }
 
-        private Button MkBtn(string txt, int w, string tip, EventHandler click)
+        private AkButton MkBtn(string txt, int w, AkKind kind, AkIcon icon, string tip, EventHandler click)
         {
-            Button b = new Button
+            AkButton b = new AkButton
             {
-                Text = txt, Width = w, Height = 28, FlatStyle = FlatStyle.Flat, Font = _fBold,
-                Cursor = Cursors.Hand, Margin = new Padding(0, 0, 5, 0), TabStop = false
+                Kind = kind, Icon = icon,
+                Text = txt, Width = w, Height = 28, Font = _fBold,
+                Margin = new Padding(0, 0, 5, 0)
             };
-            b.FlatAppearance.BorderSize = 1;
             b.Click += click;
             _tip.SetToolTip(b, tip);
             return b;
@@ -460,15 +476,34 @@ namespace NillyFontPro
 
         private void LayoutCtrlBar()
         {
-            int rightW = 34 + 44 + 34 + 30 + 30 + 82 + 82 + 84 + 66 + 48;
-            int specW = Math.Max(140, _ctrlBar.Width - rightW - 22);
-            _txtSpecimen.SetBounds(10, 9, specW, 26);
-            int x = _txtSpecimen.Right + 10;
+            int w = Math.Max(600, _ctrlBar.ClientSize.Width);
+            int pad = 12, gap = 5;
             Control[] ctrls = new Control[] { _btnSizeDown, _lblSizeVal, _btnSizeUp, _btnBold, _btnItalic, _btnSetA, _btnSetB, _btnCopyName, _btnSendNote };
-            for (int i = 0; i < ctrls.Length; i++)
+            int rightW = 0;
+            for (int i = 0; i < ctrls.Length; i++) rightW += ctrls[i].Width + gap;
+
+            if (w - pad * 2 - rightW - 10 >= 190)
             {
-                ctrls[i].Location = new Point(x, 8);
-                x += ctrls[i].Width + 4;
+                if (_ctrlBar.Height != 44) _ctrlBar.Height = 44;
+                int specW = w - pad * 2 - rightW - 8;
+                _txtSpecimen.SetBounds(pad, 9, specW, 26);
+                int x = _txtSpecimen.Right + 10;
+                for (int i = 0; i < ctrls.Length; i++)
+                {
+                    ctrls[i].Location = new Point(x, 8);
+                    x += ctrls[i].Width + gap;
+                }
+            }
+            else
+            {
+                if (_ctrlBar.Height != 80) _ctrlBar.Height = 80;
+                _txtSpecimen.SetBounds(pad, 8, w - pad * 2, 26);
+                int x = pad;
+                for (int i = 0; i < ctrls.Length; i++)
+                {
+                    ctrls[i].Location = new Point(x, 42);
+                    x += ctrls[i].Width + gap;
+                }
             }
         }
 
@@ -715,56 +750,60 @@ namespace NillyFontPro
         {
             if (_dark)
             {
-                _bgMain = Color.FromArgb(24, 26, 31); _bgPanel = Color.FromArgb(31, 34, 41);
-                _bgSurf = Color.FromArgb(39, 43, 52); _bgHover = Color.FromArgb(49, 54, 66);
-                _bgSel = Color.FromArgb(54, 67, 89); _bgAlt = Color.FromArgb(28, 30, 36);
-                _border = Color.FromArgb(52, 57, 68); _fgMain = Color.FromArgb(236, 239, 244);
-                _fgMuted = Color.FromArgb(148, 157, 174); _accent = Color.FromArgb(252, 150, 31);
+                _bgMain = Color.FromArgb(29, 31, 32); _bgPanel = Color.FromArgb(34, 36, 38);
+                _bgSurf = Color.FromArgb(24, 26, 27); _bgHover = Color.FromArgb(48, 51, 54);
+                _bgSel = Color.FromArgb(46, 51, 58); _bgAlt = Color.FromArgb(32, 34, 36);
+                _border = Color.FromArgb(54, 57, 61); _fgMain = Color.FromArgb(242, 244, 247);
+                _fgMuted = Color.FromArgb(154, 160, 168); _accent = Color.FromArgb(252, 150, 31);
                 _cyan = Color.FromArgb(102, 217, 239); _green = Color.FromArgb(166, 226, 46);
-                _pink = Color.FromArgb(249, 38, 114);
+                _pink = Color.FromArgb(240, 104, 118);
             }
             else
             {
-                _bgMain = Color.FromArgb(248, 249, 251); _bgPanel = Color.FromArgb(238, 241, 246);
+                _bgMain = Color.FromArgb(248, 249, 250); _bgPanel = Color.FromArgb(238, 241, 246);
                 _bgSurf = Color.White; _bgHover = Color.FromArgb(226, 232, 242);
                 _bgSel = Color.FromArgb(209, 228, 250); _bgAlt = Color.FromArgb(243, 245, 249);
-                _border = Color.FromArgb(210, 216, 226); _fgMain = Color.FromArgb(28, 32, 40);
-                _fgMuted = Color.FromArgb(98, 108, 125); _accent = Color.FromArgb(224, 118, 12);
+                _border = Color.FromArgb(210, 216, 226); _fgMain = Color.FromArgb(26, 29, 33);
+                _fgMuted = Color.FromArgb(95, 104, 116); _accent = Color.FromArgb(224, 118, 12);
                 _cyan = Color.FromArgb(14, 132, 168); _green = Color.FromArgb(62, 145, 32);
-                _pink = Color.FromArgb(204, 28, 92);
+                _pink = Color.FromArgb(196, 40, 56);
             }
 
             Native.SetDarkTitlebar(Handle, _dark);
             BackColor = _bgMain; ForeColor = _fgMain;
             _header.BackColor = _bgPanel; _ctrlBar.BackColor = _bgPanel; _statusBar.BackColor = _bgPanel;
-            _lblTitle.ForeColor = _fgMain; _lblSub.ForeColor = _accent; _lblStatus.ForeColor = _fgMuted; _lblSizeVal.ForeColor = _cyan;
+            _lblTitle.ForeColor = _fgMain; _lblSub.ForeColor = _accent; _lblStatus.ForeColor = _fgMuted; _lblSizeVal.ForeColor = _accent;
             _lnkBrand.LinkColor = _fgMuted; _lnkBrand.ActiveLinkColor = _accent;
             _txtSearch.BackColor = _bgSurf; _txtSearch.ForeColor = _fgMain;
             _txtSpecimen.BackColor = _bgSurf; _txtSpecimen.ForeColor = _fgMain;
             _list.BackColor = _bgMain; _list.ForeColor = _fgMain;
             Native.SetDarkScrollbars(_list, _dark);
             StyleButtons();
+            _header.Invalidate();
+            _ctrlBar.Invalidate();
+            _statusBar.Invalidate();
             _list.Invalidate();
             _comparePanel.Invalidate();
         }
 
         private void StyleButtons()
         {
-            StyleBtn(_btnGreek, _greekOnly, _green);
-            StyleBtn(_btnCompare, _compareMode, _accent);
-            StyleBtn(_btnInstall, false, _cyan);
-            StyleBtn(_btnTheme, false, _accent);
-            StyleBtn(_btnInfo, false, _accent);
-            _btnInfo.ForeColor = _accent; _btnInfo.FlatAppearance.BorderColor = _accent;
+            _btnGreek.Active = _greekOnly;
+            _btnCompare.Active = _compareMode;
+            _btnBold.Active = _bold;
+            _btnItalic.Active = _italic;
+            _btnTheme.Icon = _dark ? AkIcon.Sun : AkIcon.Moon;
 
-            StyleBtn(_btnSizeDown, false, _fgMuted);
-            StyleBtn(_btnSizeUp, false, _fgMuted);
-            StyleBtn(_btnBold, _bold, _accent);
-            StyleBtn(_btnItalic, _italic, _accent);
-            StyleBtn(_btnSetA, false, _cyan);
-            StyleBtn(_btnSetB, false, _accent);
-            StyleBtn(_btnCopyName, false, _green);
-            StyleBtn(_btnSendNote, false, _accent);
+            AkButton[] all = new AkButton[]
+            {
+                _btnGreek, _btnCompare, _btnInstall, _btnTheme, _btnInfo,
+                _btnSizeDown, _btnSizeUp, _btnBold, _btnItalic, _btnSetA, _btnSetB, _btnCopyName, _btnSendNote
+            };
+            for (int i = 0; i < all.Length; i++)
+            {
+                all[i].Dark = _dark;
+                all[i].Invalidate();
+            }
         }
 
         private static bool ReadSuiteDark(bool fallback)
@@ -856,7 +895,7 @@ namespace NillyFontPro
                 Native.SetDarkTitlebar(dlg.Handle, _dark);
 
                 PictureBox pic = new PictureBox { Size = new Size(42, 42), Location = new Point(18, 16), SizeMode = PictureBoxSizeMode.Zoom, Image = _logoBmp };
-                Label hdr = new Label { Text = "NillyFont Pro v1.2.1", Location = new Point(70, 16), AutoSize = true, Font = new Font("Segoe UI", 13.0f, FontStyle.Bold) };
+                Label hdr = new Label { Text = "NillyFont Pro v1.2.2", Location = new Point(70, 16), AutoSize = true, Font = new Font("Segoe UI", 13.0f, FontStyle.Bold) };
                 Label sub = new Label { Text = "Ultra-Light Font Manager, Live Specimen & True Greek Glyph Filter", Location = new Point(72, 42), AutoSize = true, Font = _fSmall, ForeColor = _accent, UseMnemonic = false };
 
                 Panel card = new Panel { Location = new Point(18, 72), Size = new Size(474, 185), BackColor = _bgPanel };
@@ -931,7 +970,7 @@ namespace NillyFontPro
                     }
                 }
             }
-            Application.Run(new MainForm(false, fontFiles.Count > 0 ? fontFiles.ToArray() : null));
+            Application.Run(SuiteUpdater.Attach(new MainForm(false, fontFiles.Count > 0 ? fontFiles.ToArray() : null), "nillyfont-pro", "NillyFont-Pro", "Install_NillyFontPro.ps1"));
             return 0;
         }
 
@@ -977,4 +1016,751 @@ namespace NillyFontPro
             return 0;
         }
     }
+
+    // ========================================================================
+    // BUILT-IN ULTRA-LIGHT AUTO-UPDATER (1x/24h shared CDN check · SHA-256)
+    // ========================================================================
+    internal static class SuiteUpdater
+    {
+        private const string CATALOG_URL = "https://raw.githubusercontent.com/nillynp/nillyhub/main/catalog.json";
+
+        public static T Attach<T>(T form, string repoName, string pkgPrefix, string installerScript) where T : System.Windows.Forms.Form
+        {
+            if (form == null) return null;
+            form.Shown += delegate
+            {
+                System.Threading.Thread th = new System.Threading.Thread(delegate()
+                {
+                    try
+                    {
+                        System.Threading.Thread.Sleep(2200);
+                        if (form.IsDisposed) return;
+                        string curTag, newTag;
+                        if (!CheckForUpdate(repoName, out curTag, out newTag)) return;
+                        if (form.IsDisposed || !form.IsHandleCreated) return;
+                        form.BeginInvoke((System.Action)delegate
+                        {
+                            if (form.IsDisposed || form.FormBorderStyle == System.Windows.Forms.FormBorderStyle.None) return;
+                            ShowUpdateBanner(form, repoName, pkgPrefix, installerScript, curTag, newTag);
+                        });
+                    }
+                    catch { }
+                });
+                th.IsBackground = true;
+                th.Start();
+            };
+            return form;
+        }
+
+        private static void ShowUpdateBanner(System.Windows.Forms.Form form, string repoName, string pkgPrefix, string installerScript, string curTag, string newTag)
+        {
+            System.Drawing.Font fTxt = new System.Drawing.Font("Segoe UI", 8.5f, System.Drawing.FontStyle.Regular);
+            System.Drawing.Font fBtn = new System.Drawing.Font("Segoe UI", 8.2f, System.Drawing.FontStyle.Bold);
+
+            System.Windows.Forms.Panel bar = new System.Windows.Forms.Panel();
+            bar.Dock = System.Windows.Forms.DockStyle.Top;
+            bar.Height = 28;
+            bar.BackColor = System.Drawing.Color.FromArgb(40, 29, 18);
+            bar.Padding = new System.Windows.Forms.Padding(10, 0, 8, 1);
+            bar.Paint += delegate(object s, System.Windows.Forms.PaintEventArgs e)
+            {
+                using (System.Drawing.Pen p = new System.Drawing.Pen(System.Drawing.Color.FromArgb(252, 150, 31)))
+                    e.Graphics.DrawLine(p, 0, bar.Height - 1, bar.Width, bar.Height - 1);
+            };
+
+            System.Windows.Forms.Button btnClose = new System.Windows.Forms.Button();
+            btnClose.Text = "×";
+            btnClose.Dock = System.Windows.Forms.DockStyle.Right;
+            btnClose.Width = 26;
+            btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnClose.FlatAppearance.BorderSize = 0;
+            btnClose.BackColor = System.Drawing.Color.Transparent;
+            btnClose.ForeColor = System.Drawing.Color.FromArgb(200, 170, 130);
+            btnClose.Font = fBtn;
+            btnClose.Cursor = System.Windows.Forms.Cursors.Hand;
+            btnClose.TabStop = false;
+            btnClose.Click += delegate { bar.Dispose(); };
+
+            System.Windows.Forms.Button btnUpd = new System.Windows.Forms.Button();
+            btnUpd.Text = "Ενημέρωση";
+            btnUpd.Dock = System.Windows.Forms.DockStyle.Right;
+            btnUpd.Width = 88;
+            btnUpd.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnUpd.FlatAppearance.BorderSize = 0;
+            btnUpd.BackColor = System.Drawing.Color.FromArgb(252, 150, 31);
+            btnUpd.ForeColor = System.Drawing.Color.FromArgb(20, 22, 26);
+            btnUpd.Font = fBtn;
+            btnUpd.Cursor = System.Windows.Forms.Cursors.Hand;
+            btnUpd.TabStop = false;
+
+            System.Windows.Forms.Label lbl = new System.Windows.Forms.Label();
+            lbl.Dock = System.Windows.Forms.DockStyle.Fill;
+            lbl.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            lbl.Font = fTxt;
+            lbl.ForeColor = System.Drawing.Color.FromArgb(255, 185, 95);
+            lbl.UseMnemonic = false;
+            lbl.Text = "Νέα έκδοση " + newTag + " διαθέσιμη (έχεις " + curTag + ")";
+
+            btnUpd.Click += delegate
+            {
+                btnUpd.Enabled = false;
+                btnUpd.Text = "Λήψη...";
+                System.Threading.Thread uth = new System.Threading.Thread(delegate()
+                {
+                    try
+                    {
+                        ApplySelfUpdate(repoName, pkgPrefix, installerScript,
+                            delegate(string st)
+                            {
+                                try { if (!form.IsDisposed) form.BeginInvoke((System.Action)delegate { lbl.Text = st; }); } catch { }
+                            },
+                            delegate
+                            {
+                                try { if (!form.IsDisposed) form.BeginInvoke((System.Action)delegate { System.Windows.Forms.Application.Exit(); }); } catch { }
+                            });
+                    }
+                    catch (System.Exception ex)
+                    {
+                        try
+                        {
+                            if (!form.IsDisposed) form.BeginInvoke((System.Action)delegate
+                            {
+                                lbl.Text = "Σφάλμα ενημέρωσης: " + ex.Message;
+                                btnUpd.Text = "Ενημέρωση";
+                                btnUpd.Enabled = true;
+                            });
+                        }
+                        catch { }
+                    }
+                });
+                uth.IsBackground = true;
+                uth.Start();
+            };
+
+            bar.Disposed += delegate { fTxt.Dispose(); fBtn.Dispose(); };
+            bar.Controls.Add(lbl);
+            bar.Controls.Add(btnUpd);
+            bar.Controls.Add(btnClose);
+            form.Controls.Add(bar);
+        }
+
+        private static bool TryParseVer(string raw, out System.Version ver)
+        {
+            ver = null;
+            if (string.IsNullOrEmpty(raw)) return false;
+            string s = raw.Trim();
+            if (s.StartsWith("v", System.StringComparison.OrdinalIgnoreCase)) s = s.Substring(1);
+            string[] p = s.Split('.');
+            if (p.Length < 2 || p.Length > 4) return false;
+            int maj, min, pat = 0;
+            if (!int.TryParse(p[0], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out maj)) return false;
+            if (!int.TryParse(p[1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out min)) return false;
+            if (p.Length >= 3 && !int.TryParse(p[2], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out pat)) return false;
+            ver = new System.Version(maj, min, pat, 0);
+            return true;
+        }
+
+        private static string FmtVer(System.Version v)
+        {
+            return v.Build > 0
+                ? string.Format(System.Globalization.CultureInfo.InvariantCulture, "v{0}.{1}.{2}", v.Major, v.Minor, v.Build)
+                : string.Format(System.Globalization.CultureInfo.InvariantCulture, "v{0}.{1}", v.Major, v.Minor);
+        }
+
+        public static bool CheckForUpdate(string repoName, out string curTag, out string newTag)
+        {
+            curTag = null; newTag = null;
+            System.Version rawCur = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            System.Version curVer = new System.Version(rawCur.Major, rawCur.Minor, rawCur.Build >= 0 ? rawCur.Build : 0, 0);
+            curTag = FmtVer(curVer);
+
+            string suiteDir = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "NillySuite");
+            string cachePath = System.IO.Path.Combine(suiteDir, ".nillyhub_catalog.json");
+            string json = null;
+            try
+            {
+                if (System.IO.File.Exists(cachePath))
+                {
+                    System.DateTime wt = System.IO.File.GetLastWriteTimeUtc(cachePath);
+                    if ((System.DateTime.UtcNow - wt).TotalHours < 24.0)
+                    {
+                        string cached = System.IO.File.ReadAllText(cachePath, System.Text.Encoding.UTF8);
+                        if (cached.IndexOf("\"latestVersion\"", System.StringComparison.Ordinal) >= 0) json = cached;
+                    }
+                }
+            }
+            catch { }
+
+            if (string.IsNullOrEmpty(json))
+            {
+                json = HttpGetText(CATALOG_URL, 5000);
+                if (string.IsNullOrEmpty(json) || json.Length > 256 * 1024) return false;
+                try
+                {
+                    System.IO.Directory.CreateDirectory(suiteDir);
+                    System.IO.File.WriteAllText(cachePath, json, new System.Text.UTF8Encoding(false));
+                }
+                catch { }
+            }
+
+            System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(
+                json,
+                "\"repo\"\\s*:\\s*\"" + System.Text.RegularExpressions.Regex.Escape(repoName) + "\"[^\\}]{0,500}?\"latestVersion\"\\s*:\\s*\"(v[0-9]+\\.[0-9]+(?:\\.[0-9]+)?)\"",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!m.Success) return false;
+            System.Version remVer;
+            if (!TryParseVer(m.Groups[1].Value, out remVer) || remVer <= curVer) return false;
+            newTag = FmtVer(remVer);
+            return true;
+        }
+
+        private static string HttpGetText(string url, int timeoutMs)
+        {
+            try { System.Net.ServicePointManager.SecurityProtocol |= (System.Net.SecurityProtocolType)3072 | System.Net.SecurityProtocolType.Tls12; } catch { }
+            System.Net.HttpWebRequest req = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(url);
+            req.UserAgent = "NillySuite-Updater/1.0 (https://nillygraphics.com/)";
+            req.Accept = "application/vnd.github+json, application/json";
+            req.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
+            req.Timeout = timeoutMs;
+            req.ReadWriteTimeout = timeoutMs;
+            using (System.Net.HttpWebResponse resp = (System.Net.HttpWebResponse)req.GetResponse())
+            using (System.IO.Stream st = resp.GetResponseStream())
+            using (System.IO.StreamReader sr = new System.IO.StreamReader(st, System.Text.Encoding.UTF8))
+                return sr.ReadToEnd();
+        }
+
+        private static string ExtractAssetBlock(string json, string assetName)
+        {
+            System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(
+                json, "\"name\"\\s*:\\s*\"" + System.Text.RegularExpressions.Regex.Escape(assetName) + "\"");
+            if (!m.Success) return null;
+            int start = m.Index;
+            int depth = 0;
+            while (start > 0)
+            {
+                char c = json[start];
+                if (c == '}') depth++;
+                else if (c == '{') { if (depth == 0) break; depth--; }
+                start--;
+            }
+            int end = start;
+            depth = 0;
+            bool inStr = false;
+            for (int i = start; i < json.Length; i++)
+            {
+                char c = json[i];
+                if (c == '"' && (i == 0 || json[i - 1] != '\\')) inStr = !inStr;
+                if (inStr) continue;
+                if (c == '{') depth++;
+                else if (c == '}') { depth--; if (depth == 0) { end = i; break; } }
+            }
+            return end > start ? json.Substring(start, end - start + 1) : null;
+        }
+
+        public static void ApplySelfUpdate(string repoName, string pkgPrefix, string installerScript, System.Action<string> onStatus, System.Action onExit)
+        {
+            string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string appDir = System.IO.Path.GetDirectoryName(exePath);
+            if (System.IO.Directory.Exists(System.IO.Path.Combine(appDir, ".git")))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://github.com/nillynp/" + repoName + "/releases/latest") { UseShellExecute = true });
+                if (onStatus != null) onStatus("Άνοιξε το GitHub Release (φάκελος Git).");
+                return;
+            }
+
+            if (onStatus != null) onStatus("Έλεγχος SHA-256 στο GitHub...");
+            string relJson = HttpGetText("https://api.github.com/repos/nillynp/" + repoName + "/releases/latest", 12000);
+            if (string.IsNullOrEmpty(relJson)) throw new System.IO.InvalidDataException("Κενή απόκριση GitHub.");
+            if (System.Text.RegularExpressions.Regex.IsMatch(relJson, "\"draft\"\\s*:\\s*true") ||
+                System.Text.RegularExpressions.Regex.IsMatch(relJson, "\"prerelease\"\\s*:\\s*true"))
+                throw new System.IO.InvalidDataException("Μη σταθερή έκδοση.");
+
+            System.Text.RegularExpressions.Match tm = System.Text.RegularExpressions.Regex.Match(relJson, "\"tag_name\"\\s*:\\s*\"(v[0-9]+\\.[0-9]+(?:\\.[0-9]+)?)\"");
+            if (!tm.Success) throw new System.IO.InvalidDataException("Μη έγκυρο tag έκδοσης.");
+            string tag = tm.Groups[1].Value;
+
+            System.Version curRaw = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            System.Version curVer = new System.Version(curRaw.Major, curRaw.Minor, curRaw.Build >= 0 ? curRaw.Build : 0, 0);
+            System.Version remVer;
+            if (!TryParseVer(tag, out remVer) || remVer <= curVer)
+                throw new System.InvalidOperationException("Έχεις ήδη την τελευταία έκδοση.");
+
+            string zipName = pkgPrefix + "-" + tag + "-Portable.zip";
+            string expectedUrl = "https://github.com/nillynp/" + repoName + "/releases/download/" + tag + "/" + zipName;
+            string blk = ExtractAssetBlock(relJson, zipName);
+            if (string.IsNullOrEmpty(blk)) throw new System.IO.FileNotFoundException("Δεν βρέθηκε το Portable ZIP.");
+            if (!System.Text.RegularExpressions.Regex.IsMatch(blk, "\"state\"\\s*:\\s*\"uploaded\""))
+                throw new System.IO.InvalidDataException("Το αρχείο δεν είναι έτοιμο.");
+            System.Text.RegularExpressions.Match um = System.Text.RegularExpressions.Regex.Match(blk, "\"browser_download_url\"\\s*:\\s*\"([^\"]+)\"");
+            if (!um.Success || !string.Equals(um.Groups[1].Value, expectedUrl, System.StringComparison.Ordinal))
+                throw new System.IO.InvalidDataException("Μη έγκυρο URL λήψης.");
+            System.Text.RegularExpressions.Match dm = System.Text.RegularExpressions.Regex.Match(blk, "\"digest\"\\s*:\\s*\"sha256:([0-9a-f]{64})\"");
+            if (!dm.Success) throw new System.IO.InvalidDataException("Απουσιάζει SHA-256.");
+            string expectedSha = dm.Groups[1].Value;
+
+            string tmpDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "NillyUpd-" + System.Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(tmpDir);
+            string zipFile = System.IO.Path.Combine(tmpDir, "pkg.zip");
+
+            if (onStatus != null) onStatus("Λήψη " + tag + "...");
+            try { System.Net.ServicePointManager.SecurityProtocol |= (System.Net.SecurityProtocolType)3072 | System.Net.SecurityProtocolType.Tls12; } catch { }
+            System.Net.HttpWebRequest dreq = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(expectedUrl);
+            dreq.UserAgent = "NillySuite-Updater/1.0 (https://nillygraphics.com/)";
+            dreq.Timeout = 20000;
+            dreq.ReadWriteTimeout = 30000;
+            using (System.Net.HttpWebResponse dresp = (System.Net.HttpWebResponse)dreq.GetResponse())
+            using (System.IO.Stream src = dresp.GetResponseStream())
+            using (System.IO.FileStream dst = new System.IO.FileStream(zipFile, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None))
+            {
+                byte[] buf = new byte[16384];
+                int n; long total = 0;
+                while ((n = src.Read(buf, 0, buf.Length)) > 0)
+                {
+                    total += n;
+                    if (total > 32L * 1024L * 1024L) throw new System.IO.InvalidDataException("Υπέρβαση μεγέθους ZIP.");
+                    dst.Write(buf, 0, n);
+                }
+            }
+
+            if (onStatus != null) onStatus("Επαλήθευση SHA-256...");
+            string actualSha;
+            using (System.Security.Cryptography.SHA256 sha = System.Security.Cryptography.SHA256.Create())
+            using (System.IO.FileStream fs = System.IO.File.OpenRead(zipFile))
+            {
+                byte[] hash = sha.ComputeHash(fs);
+                System.Text.StringBuilder sb = new System.Text.StringBuilder(64);
+                for (int i = 0; i < hash.Length; i++) sb.Append(hash[i].ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
+                actualSha = sb.ToString();
+            }
+            if (!string.Equals(actualSha, expectedSha, System.StringComparison.OrdinalIgnoreCase))
+            {
+                try { System.IO.Directory.Delete(tmpDir, true); } catch { }
+                throw new System.IO.InvalidDataException("Αποτυχία ελέγχου SHA-256.");
+            }
+
+            if (onStatus != null) onStatus("Εγκατάσταση " + tag + " & επανεκκίνηση...");
+            string ps1 = System.IO.Path.Combine(tmpDir, "apply.ps1");
+            string script =
+                "param($myPid,$zip,$appDir,$instName,$exePath,$tag)\r\n" +
+                "for($i=0;$i -lt 60;$i++){ if(-not (Get-Process -Id $myPid -ErrorAction SilentlyContinue)){break}; Start-Sleep -Milliseconds 150 }\r\n" +
+                "Add-Type -AssemblyName System.IO.Compression.FileSystem\r\n" +
+                "$za = [System.IO.Compression.ZipFile]::OpenRead($zip)\r\n" +
+                "try {\r\n" +
+                "  $pref = $null; $shared = $true\r\n" +
+                "  foreach($e in $za.Entries){ $fn=$e.FullName -replace '\\\\','/'; $sl=$fn.IndexOf('/'); if($sl -le 0){$shared=$false;break}; $p=$fn.Substring(0,$sl+1); if(-not $pref){$pref=$p}elseif(-not $pref.Equals($p,[StringComparison]::OrdinalIgnoreCase)){$shared=$false;break} }\r\n" +
+                "  $rootFull = [System.IO.Path]::GetFullPath($appDir).TrimEnd('\\') + '\\'\r\n" +
+                "  foreach($e in $za.Entries){\r\n" +
+                "    $rel = $e.FullName -replace '\\\\','/'\r\n" +
+                "    if($shared -and $pref -and $rel.StartsWith($pref,[StringComparison]::OrdinalIgnoreCase)){ $rel=$rel.Substring($pref.Length) }\r\n" +
+                "    if([string]::IsNullOrEmpty($rel) -or $rel.EndsWith('/') -or $rel.Contains(':')){ continue }\r\n" +
+                "    $dst = [System.IO.Path]::GetFullPath((Join-Path $appDir ($rel -replace '/','\\')))\r\n" +
+                "    if(-not $dst.StartsWith($rootFull,[StringComparison]::OrdinalIgnoreCase)){ continue }\r\n" +
+                "    $par = Split-Path -Parent $dst; if($par){ New-Item -ItemType Directory -Force -Path $par | Out-Null }\r\n" +
+                "    for($k=0;$k -lt 5;$k++){ try { [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); break } catch { Start-Sleep -Milliseconds 250 } }\r\n" +
+                "  }\r\n" +
+                "} finally { $za.Dispose() }\r\n" +
+                "$bak = $exePath + '.bak'\r\n" +
+                "if(Test-Path $exePath){ Copy-Item -LiteralPath $exePath -Destination $bak -Force -ErrorAction SilentlyContinue; for($k=0;$k -lt 5;$k++){ try { Remove-Item -LiteralPath $exePath -Force -ErrorAction Stop; break } catch { Start-Sleep -Milliseconds 250 } } }\r\n" +
+                "Get-ChildItem (Join-Path $appDir 'desktop') -Filter '*.cs' -ErrorAction SilentlyContinue | ForEach-Object { $_.LastWriteTimeUtc = [DateTime]::UtcNow }\r\n" +
+                "if($instName -and (Test-Path (Join-Path $appDir $instName))){ & (Join-Path $appDir $instName) -Silent 2>$null | Out-Null }\r\n" +
+                "if(-not (Test-Path $exePath) -and (Test-Path $bak)){ Move-Item -LiteralPath $bak -Destination $exePath -Force -ErrorAction SilentlyContinue } else { Remove-Item -LiteralPath $bak -Force -ErrorAction SilentlyContinue }\r\n" +
+                "if($tag){ Set-Content -LiteralPath (Join-Path $appDir '.nilly_version') -Value $tag -Encoding UTF8 -ErrorAction SilentlyContinue }\r\n" +
+                "if(Test-Path $exePath){ Start-Process -FilePath $exePath -WorkingDirectory $appDir }\r\n" +
+                "Start-Sleep -Milliseconds 400\r\n" +
+                "Remove-Item -LiteralPath (Split-Path $zip) -Recurse -Force -ErrorAction SilentlyContinue\r\n";
+            System.IO.File.WriteAllText(ps1, script, new System.Text.UTF8Encoding(false));
+
+            int myPid = System.Diagnostics.Process.GetCurrentProcess().Id;
+            System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo(
+                "powershell.exe",
+                "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + ps1 + "\" " +
+                myPid + " \"" + zipFile + "\" \"" + appDir + "\" \"" + installerScript + "\" \"" + exePath + "\" \"" + tag + "\"");
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+            System.Diagnostics.Process.Start(psi);
+            if (onExit != null) onExit();
+        }
+    }
+
+    // ========================================================================
+    // ARIAKIT-INSPIRED MINIMAL VECTOR UI KIT (Zero DLLs · 1.5px Stroke Icons)
+    // ========================================================================
+    internal enum AkKind { Primary, Secondary, Ghost, Tab, AccentOutline, Danger }
+
+    internal enum AkIcon
+    {
+        None, Refresh, Sun, Moon, Search, Pin, Info, Play, Pause, Stop,
+        Plus, Minus, Close, Up, Down, Folder, Copy, Trash, Check, Swap,
+        Download, Link, Split, Pipette, Bolt, List, Filter, Shield, Lock, Unlock,
+        Edit, Save, External, Bold, Italic, Undo, ChevLeft, ChevRight, Star
+    }
+
+    internal static class AkDraw
+    {
+        public static System.Drawing.Drawing2D.GraphicsPath RoundRect(float x, float y, float w, float h, float r)
+        {
+            System.Drawing.Drawing2D.GraphicsPath p = new System.Drawing.Drawing2D.GraphicsPath();
+            float d = System.Math.Min(r * 2f, System.Math.Min(w, h));
+            if (d <= 0.5f) { p.AddRectangle(new System.Drawing.RectangleF(x, y, w, h)); return p; }
+            p.AddArc(x, y, d, d, 180, 90);
+            p.AddArc(x + w - d, y, d, d, 270, 90);
+            p.AddArc(x + w - d, y + h - d, d, d, 0, 90);
+            p.AddArc(x, y + h - d, d, d, 90, 90);
+            p.CloseFigure();
+            return p;
+        }
+
+        public static void DrawIcon(System.Drawing.Graphics g, AkIcon icon, float cx, float cy, float sz, System.Drawing.Color color)
+        {
+            if (icon == AkIcon.None) return;
+            System.Drawing.Drawing2D.SmoothingMode oldSm = g.SmoothingMode;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            float r = sz * 0.5f;
+            using (System.Drawing.Pen pen = new System.Drawing.Pen(color, 1.5f))
+            using (System.Drawing.SolidBrush br = new System.Drawing.SolidBrush(color))
+            {
+                pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+                pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+                pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
+                switch (icon)
+                {
+                    case AkIcon.Refresh:
+                        g.DrawArc(pen, cx - r * 0.82f, cy - r * 0.82f, r * 1.64f, r * 1.64f, -55, 295);
+                        g.DrawLine(pen, cx + r * 0.28f, cy - r * 0.85f, cx + r * 0.62f, cy - r * 0.52f);
+                        g.DrawLine(pen, cx + r * 0.62f, cy - r * 0.52f, cx + r * 0.20f, cy - r * 0.42f);
+                        break;
+                    case AkIcon.Sun:
+                        g.DrawEllipse(pen, cx - r * 0.42f, cy - r * 0.42f, r * 0.84f, r * 0.84f);
+                        for (int i = 0; i < 8; i++)
+                        {
+                            double a = i * System.Math.PI / 4.0;
+                            float x1 = cx + (float)(System.Math.Cos(a) * r * 0.68f);
+                            float y1 = cy + (float)(System.Math.Sin(a) * r * 0.68f);
+                            float x2 = cx + (float)(System.Math.Cos(a) * r * 0.94f);
+                            float y2 = cy + (float)(System.Math.Sin(a) * r * 0.94f);
+                            g.DrawLine(pen, x1, y1, x2, y2);
+                        }
+                        break;
+                    case AkIcon.Moon:
+                        g.DrawArc(pen, cx - r * 0.78f, cy - r * 0.78f, r * 1.56f, r * 1.56f, 40, 235);
+                        g.DrawArc(pen, cx - r * 0.30f, cy - r * 0.92f, r * 1.32f, r * 1.32f, 115, 130);
+                        break;
+                    case AkIcon.Search:
+                        g.DrawEllipse(pen, cx - r * 0.82f, cy - r * 0.82f, r * 1.24f, r * 1.24f);
+                        g.DrawLine(pen, cx + r * 0.25f, cy + r * 0.25f, cx + r * 0.82f, cy + r * 0.82f);
+                        break;
+                    case AkIcon.Pin:
+                        g.DrawLine(pen, cx - r * 0.48f, cy - r * 0.72f, cx + r * 0.48f, cy - r * 0.72f);
+                        g.DrawLine(pen, cx - r * 0.34f, cy - r * 0.72f, cx - r * 0.56f, cy + r * 0.14f);
+                        g.DrawLine(pen, cx + r * 0.34f, cy - r * 0.72f, cx + r * 0.56f, cy + r * 0.14f);
+                        g.DrawLine(pen, cx - r * 0.66f, cy + r * 0.14f, cx + r * 0.66f, cy + r * 0.14f);
+                        g.DrawLine(pen, cx, cy + r * 0.14f, cx, cy + r * 0.86f);
+                        break;
+                    case AkIcon.Info:
+                        g.DrawEllipse(pen, cx - r * 0.85f, cy - r * 0.85f, r * 1.70f, r * 1.70f);
+                        g.DrawLine(pen, cx, cy - r * 0.08f, cx, cy + r * 0.48f);
+                        g.FillEllipse(br, cx - 1.1f, cy - r * 0.52f, 2.2f, 2.2f);
+                        break;
+                    case AkIcon.Play:
+                        g.FillPolygon(br, new System.Drawing.PointF[] {
+                            new System.Drawing.PointF(cx - r * 0.45f, cy - r * 0.68f),
+                            new System.Drawing.PointF(cx + r * 0.68f, cy),
+                            new System.Drawing.PointF(cx - r * 0.45f, cy + r * 0.68f)
+                        });
+                        break;
+                    case AkIcon.Pause:
+                        g.DrawLine(pen, cx - r * 0.36f, cy - r * 0.62f, cx - r * 0.36f, cy + r * 0.62f);
+                        g.DrawLine(pen, cx + r * 0.36f, cy - r * 0.62f, cx + r * 0.36f, cy + r * 0.62f);
+                        break;
+                    case AkIcon.Stop:
+                        g.FillRectangle(br, cx - r * 0.56f, cy - r * 0.56f, r * 1.12f, r * 1.12f);
+                        break;
+                    case AkIcon.Plus:
+                        g.DrawLine(pen, cx - r * 0.68f, cy, cx + r * 0.68f, cy);
+                        g.DrawLine(pen, cx, cy - r * 0.68f, cx, cy + r * 0.68f);
+                        break;
+                    case AkIcon.Minus:
+                        g.DrawLine(pen, cx - r * 0.68f, cy, cx + r * 0.68f, cy);
+                        break;
+                    case AkIcon.Close:
+                        g.DrawLine(pen, cx - r * 0.58f, cy - r * 0.58f, cx + r * 0.58f, cy + r * 0.58f);
+                        g.DrawLine(pen, cx + r * 0.58f, cy - r * 0.58f, cx - r * 0.58f, cy + r * 0.58f);
+                        break;
+                    case AkIcon.Up:
+                        g.DrawLine(pen, cx, cy + r * 0.68f, cx, cy - r * 0.64f);
+                        g.DrawLine(pen, cx - r * 0.52f, cy - r * 0.14f, cx, cy - r * 0.66f);
+                        g.DrawLine(pen, cx + r * 0.52f, cy - r * 0.14f, cx, cy - r * 0.66f);
+                        break;
+                    case AkIcon.Down:
+                        g.DrawLine(pen, cx, cy - r * 0.68f, cx, cy + r * 0.64f);
+                        g.DrawLine(pen, cx - r * 0.52f, cy + r * 0.14f, cx, cy + r * 0.66f);
+                        g.DrawLine(pen, cx + r * 0.52f, cy + r * 0.14f, cx, cy + r * 0.66f);
+                        break;
+                    case AkIcon.Folder:
+                        g.DrawPolygon(pen, new System.Drawing.PointF[] {
+                            new System.Drawing.PointF(cx - r * 0.85f, cy - r * 0.56f),
+                            new System.Drawing.PointF(cx - r * 0.22f, cy - r * 0.56f),
+                            new System.Drawing.PointF(cx - r * 0.04f, cy - r * 0.34f),
+                            new System.Drawing.PointF(cx + r * 0.85f, cy - r * 0.34f),
+                            new System.Drawing.PointF(cx + r * 0.85f, cy + r * 0.64f),
+                            new System.Drawing.PointF(cx - r * 0.85f, cy + r * 0.64f)
+                        });
+                        break;
+                    case AkIcon.Copy:
+                        g.DrawRectangle(pen, cx - r * 0.26f, cy - r * 0.26f, r * 1.02f, r * 1.02f);
+                        g.DrawLine(pen, cx - r * 0.68f, cy + r * 0.30f, cx - r * 0.68f, cy - r * 0.68f);
+                        g.DrawLine(pen, cx - r * 0.68f, cy - r * 0.68f, cx + r * 0.30f, cy - r * 0.68f);
+                        break;
+                    case AkIcon.Trash:
+                        g.DrawLine(pen, cx - r * 0.76f, cy - r * 0.44f, cx + r * 0.76f, cy - r * 0.44f);
+                        g.DrawLine(pen, cx - r * 0.28f, cy - r * 0.74f, cx + r * 0.28f, cy - r * 0.74f);
+                        g.DrawRectangle(pen, cx - r * 0.54f, cy - r * 0.42f, r * 1.08f, r * 1.16f);
+                        break;
+                    case AkIcon.Check:
+                        g.DrawLine(pen, cx - r * 0.68f, cy + r * 0.04f, cx - r * 0.14f, cy + r * 0.58f);
+                        g.DrawLine(pen, cx - r * 0.14f, cy + r * 0.58f, cx + r * 0.74f, cy - r * 0.52f);
+                        break;
+                    case AkIcon.Swap:
+                        g.DrawLine(pen, cx - r * 0.70f, cy - r * 0.32f, cx + r * 0.70f, cy - r * 0.32f);
+                        g.DrawLine(pen, cx + r * 0.32f, cy - r * 0.68f, cx + r * 0.72f, cy - r * 0.32f);
+                        g.DrawLine(pen, cx + r * 0.70f, cy + r * 0.34f, cx - r * 0.70f, cy + r * 0.34f);
+                        g.DrawLine(pen, cx - r * 0.32f, cy + r * 0.70f, cx - r * 0.72f, cy + r * 0.34f);
+                        break;
+                    case AkIcon.Download:
+                        g.DrawLine(pen, cx, cy - r * 0.72f, cx, cy + r * 0.28f);
+                        g.DrawLine(pen, cx - r * 0.44f, cy - r * 0.12f, cx, cy + r * 0.32f);
+                        g.DrawLine(pen, cx + r * 0.44f, cy - r * 0.12f, cx, cy + r * 0.32f);
+                        g.DrawLine(pen, cx - r * 0.74f, cy + r * 0.72f, cx + r * 0.74f, cy + r * 0.72f);
+                        break;
+                    case AkIcon.Link:
+                    case AkIcon.External:
+                        g.DrawLine(pen, cx - r * 0.58f, cy + r * 0.58f, cx + r * 0.62f, cy - r * 0.62f);
+                        g.DrawLine(pen, cx - r * 0.06f, cy - r * 0.64f, cx + r * 0.64f, cy - r * 0.64f);
+                        g.DrawLine(pen, cx + r * 0.64f, cy - r * 0.64f, cx + r * 0.64f, cy + r * 0.06f);
+                        break;
+                    case AkIcon.Split:
+                        g.DrawRectangle(pen, cx - r * 0.82f, cy - r * 0.64f, r * 1.64f, r * 1.28f);
+                        g.DrawLine(pen, cx, cy - r * 0.64f, cx, cy + r * 0.64f);
+                        break;
+                    case AkIcon.Pipette:
+                        g.DrawLine(pen, cx - r * 0.66f, cy + r * 0.66f, cx + r * 0.40f, cy - r * 0.40f);
+                        g.DrawLine(pen, cx + r * 0.12f, cy - r * 0.68f, cx + r * 0.68f, cy - r * 0.12f);
+                        break;
+                    case AkIcon.Bolt:
+                        g.DrawPolygon(pen, new System.Drawing.PointF[] {
+                            new System.Drawing.PointF(cx + r * 0.14f, cy - r * 0.82f),
+                            new System.Drawing.PointF(cx - r * 0.62f, cy + r * 0.08f),
+                            new System.Drawing.PointF(cx - r * 0.04f, cy + r * 0.08f),
+                            new System.Drawing.PointF(cx - r * 0.18f, cy + r * 0.82f),
+                            new System.Drawing.PointF(cx + r * 0.62f, cy - r * 0.10f),
+                            new System.Drawing.PointF(cx + r * 0.04f, cy - r * 0.10f)
+                        });
+                        break;
+                    case AkIcon.List:
+                        g.DrawLine(pen, cx - r * 0.72f, cy - r * 0.46f, cx + r * 0.72f, cy - r * 0.46f);
+                        g.DrawLine(pen, cx - r * 0.72f, cy, cx + r * 0.72f, cy);
+                        g.DrawLine(pen, cx - r * 0.72f, cy + r * 0.46f, cx + r * 0.72f, cy + r * 0.46f);
+                        break;
+                    case AkIcon.Filter:
+                        g.DrawPolygon(pen, new System.Drawing.PointF[] {
+                            new System.Drawing.PointF(cx - r * 0.78f, cy - r * 0.60f),
+                            new System.Drawing.PointF(cx + r * 0.78f, cy - r * 0.60f),
+                            new System.Drawing.PointF(cx + r * 0.16f, cy + r * 0.08f),
+                            new System.Drawing.PointF(cx + r * 0.16f, cy + r * 0.68f),
+                            new System.Drawing.PointF(cx - r * 0.16f, cy + r * 0.52f),
+                            new System.Drawing.PointF(cx - r * 0.16f, cy + r * 0.08f)
+                        });
+                        break;
+                    case AkIcon.Shield:
+                        g.DrawPolygon(pen, new System.Drawing.PointF[] {
+                            new System.Drawing.PointF(cx, cy - r * 0.82f),
+                            new System.Drawing.PointF(cx + r * 0.72f, cy - r * 0.44f),
+                            new System.Drawing.PointF(cx + r * 0.58f, cy + r * 0.34f),
+                            new System.Drawing.PointF(cx, cy + r * 0.82f),
+                            new System.Drawing.PointF(cx - r * 0.58f, cy + r * 0.34f),
+                            new System.Drawing.PointF(cx - r * 0.72f, cy - r * 0.44f)
+                        });
+                        break;
+                    case AkIcon.Lock:
+                        g.DrawRectangle(pen, cx - r * 0.58f, cy - r * 0.08f, r * 1.16f, r * 0.84f);
+                        g.DrawArc(pen, cx - r * 0.38f, cy - r * 0.76f, r * 0.76f, r * 0.84f, 180, 180);
+                        break;
+                    case AkIcon.Unlock:
+                        g.DrawRectangle(pen, cx - r * 0.58f, cy - r * 0.08f, r * 1.16f, r * 0.84f);
+                        g.DrawArc(pen, cx - r * 0.38f, cy - r * 0.76f, r * 0.76f, r * 0.84f, 180, 130);
+                        break;
+                    case AkIcon.Save:
+                        g.DrawRectangle(pen, cx - r * 0.72f, cy - r * 0.72f, r * 1.44f, r * 1.44f);
+                        g.DrawRectangle(pen, cx - r * 0.42f, cy - r * 0.72f, r * 0.72f, r * 0.48f);
+                        g.DrawRectangle(pen, cx - r * 0.44f, cy + r * 0.14f, r * 0.88f, r * 0.58f);
+                        break;
+                    case AkIcon.Edit:
+                        g.DrawLine(pen, cx - r * 0.62f, cy + r * 0.62f, cx + r * 0.56f, cy - r * 0.56f);
+                        g.DrawLine(pen, cx + r * 0.24f, cy - r * 0.74f, cx + r * 0.74f, cy - r * 0.24f);
+                        g.DrawLine(pen, cx - r * 0.72f, cy + r * 0.72f, cx - r * 0.34f, cy + r * 0.62f);
+                        break;
+                    case AkIcon.Undo:
+                        g.DrawArc(pen, cx - r * 0.52f, cy - r * 0.34f, r * 1.24f, r * 1.04f, -135, 225);
+                        g.DrawLine(pen, cx - r * 0.72f, cy - r * 0.22f, cx - r * 0.28f, cy - r * 0.62f);
+                        g.DrawLine(pen, cx - r * 0.72f, cy - r * 0.22f, cx - r * 0.24f, cy + r * 0.10f);
+                        break;
+                    case AkIcon.ChevLeft:
+                        g.DrawLine(pen, cx + r * 0.28f, cy - r * 0.58f, cx - r * 0.34f, cy);
+                        g.DrawLine(pen, cx - r * 0.34f, cy, cx + r * 0.28f, cy + r * 0.58f);
+                        break;
+                    case AkIcon.ChevRight:
+                        g.DrawLine(pen, cx - r * 0.28f, cy - r * 0.58f, cx + r * 0.34f, cy);
+                        g.DrawLine(pen, cx + r * 0.34f, cy, cx - r * 0.28f, cy + r * 0.58f);
+                        break;
+                    case AkIcon.Star:
+                        System.Drawing.PointF[] sp = new System.Drawing.PointF[10];
+                        for (int k = 0; k < 10; k++)
+                        {
+                            double ang = -System.Math.PI / 2.0 + k * System.Math.PI / 5.0;
+                            float rad = (k % 2 == 0) ? r * 0.85f : r * 0.38f;
+                            sp[k] = new System.Drawing.PointF(cx + (float)(System.Math.Cos(ang) * rad), cy + (float)(System.Math.Sin(ang) * rad));
+                        }
+                        g.DrawPolygon(pen, sp);
+                        break;
+                }
+            }
+            g.SmoothingMode = oldSm;
+        }
+    }
+
+    internal sealed class AkButton : System.Windows.Forms.Button
+    {
+        public AkKind Kind = AkKind.Secondary;
+        public AkIcon Icon = AkIcon.None;
+        public bool Active = false;
+        public bool Dark = true;
+        public int Radius = 6;
+        private bool _hov = false;
+        private bool _down = false;
+
+        public AkButton()
+        {
+            SetStyle(System.Windows.Forms.ControlStyles.AllPaintingInWmPaint |
+                     System.Windows.Forms.ControlStyles.OptimizedDoubleBuffer |
+                     System.Windows.Forms.ControlStyles.UserPaint |
+                     System.Windows.Forms.ControlStyles.ResizeRedraw, true);
+            FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            FlatAppearance.BorderSize = 0;
+            Cursor = System.Windows.Forms.Cursors.Hand;
+            TabStop = false;
+            UseMnemonic = false;
+        }
+
+        protected override void OnMouseEnter(System.EventArgs e) { _hov = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(System.EventArgs e) { _hov = false; _down = false; Invalidate(); base.OnMouseLeave(e); }
+        protected override void OnMouseDown(System.Windows.Forms.MouseEventArgs e) { if (e.Button == System.Windows.Forms.MouseButtons.Left) { _down = true; Invalidate(); } base.OnMouseDown(e); }
+        protected override void OnMouseUp(System.Windows.Forms.MouseEventArgs e) { _down = false; Invalidate(); base.OnMouseUp(e); }
+
+        protected override void OnPaint(System.Windows.Forms.PaintEventArgs e)
+        {
+            System.Drawing.Graphics g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+            System.Drawing.Color parentBg = Parent != null ? Parent.BackColor : (Dark ? System.Drawing.Color.FromArgb(29, 31, 32) : System.Drawing.Color.FromArgb(248, 249, 250));
+            g.Clear(parentBg);
+
+            System.Drawing.Color accent = Dark ? System.Drawing.Color.FromArgb(252, 150, 31) : System.Drawing.Color.FromArgb(224, 118, 12);
+            System.Drawing.Color accentHov = Dark ? System.Drawing.Color.FromArgb(255, 169, 64) : System.Drawing.Color.FromArgb(204, 102, 8);
+            System.Drawing.Color surf = Dark ? System.Drawing.Color.FromArgb(39, 41, 43) : System.Drawing.Color.White;
+            System.Drawing.Color surfHov = Dark ? System.Drawing.Color.FromArgb(50, 53, 56) : System.Drawing.Color.FromArgb(236, 239, 243);
+            System.Drawing.Color border = Dark ? System.Drawing.Color.FromArgb(58, 62, 66) : System.Drawing.Color.FromArgb(210, 216, 224);
+            System.Drawing.Color borderHov = Dark ? System.Drawing.Color.FromArgb(84, 89, 95) : System.Drawing.Color.FromArgb(176, 184, 196);
+            System.Drawing.Color fgMain = Dark ? System.Drawing.Color.FromArgb(242, 244, 247) : System.Drawing.Color.FromArgb(26, 29, 33);
+            System.Drawing.Color fgMuted = Dark ? System.Drawing.Color.FromArgb(154, 160, 168) : System.Drawing.Color.FromArgb(95, 104, 116);
+            System.Drawing.Color fgDis = Dark ? System.Drawing.Color.FromArgb(92, 97, 104) : System.Drawing.Color.FromArgb(170, 178, 188);
+
+            bool en = Enabled;
+            System.Drawing.Color bg = parentBg;
+            System.Drawing.Color bd = System.Drawing.Color.Transparent;
+            System.Drawing.Color fg = en ? fgMain : fgDis;
+            bool drawFill = false;
+
+            if (Kind == AkKind.Primary)
+            {
+                drawFill = true;
+                bg = en ? (_hov ? accentHov : accent) : (Dark ? System.Drawing.Color.FromArgb(56, 48, 38) : System.Drawing.Color.FromArgb(228, 224, 218));
+                fg = en ? (Dark ? System.Drawing.Color.FromArgb(20, 21, 23) : System.Drawing.Color.White) : fgDis;
+            }
+            else if (Kind == AkKind.AccentOutline)
+            {
+                drawFill = true;
+                bg = en ? (_hov ? (Dark ? System.Drawing.Color.FromArgb(52, 42, 30) : System.Drawing.Color.FromArgb(255, 243, 228)) : surf) : (Dark ? System.Drawing.Color.FromArgb(32, 34, 36) : System.Drawing.Color.FromArgb(244, 246, 248));
+                bd = en ? accent : border;
+                fg = en ? accent : fgDis;
+            }
+            else if (Kind == AkKind.Danger)
+            {
+                drawFill = true;
+                System.Drawing.Color red = Dark ? System.Drawing.Color.FromArgb(240, 104, 118) : System.Drawing.Color.FromArgb(196, 40, 56);
+                bg = en ? (_hov ? (Dark ? System.Drawing.Color.FromArgb(62, 30, 36) : System.Drawing.Color.FromArgb(254, 228, 231)) : (Dark ? System.Drawing.Color.FromArgb(46, 28, 32) : System.Drawing.Color.FromArgb(255, 240, 242))) : surf;
+                bd = en ? (Dark ? System.Drawing.Color.FromArgb(116, 48, 58) : System.Drawing.Color.FromArgb(236, 154, 164)) : border;
+                fg = en ? red : fgDis;
+            }
+            else if (Kind == AkKind.Tab)
+            {
+                drawFill = _hov && en;
+                bg = surfHov;
+                fg = en ? (Active ? fgMain : (_hov ? fgMain : fgMuted)) : fgDis;
+            }
+            else if (Kind == AkKind.Ghost)
+            {
+                drawFill = (Active || _hov) && en;
+                bg = Active ? (Dark ? System.Drawing.Color.FromArgb(52, 42, 30) : System.Drawing.Color.FromArgb(255, 243, 228)) : surfHov;
+                bd = Active ? accent : System.Drawing.Color.Transparent;
+                fg = en ? (Active ? accent : (_hov ? fgMain : fgMuted)) : fgDis;
+            }
+            else // Secondary (Ariakit tactile elevated pill)
+            {
+                drawFill = true;
+                bg = en ? (Active ? (Dark ? System.Drawing.Color.FromArgb(52, 42, 30) : System.Drawing.Color.FromArgb(255, 243, 228)) : (_hov ? surfHov : surf)) : (Dark ? System.Drawing.Color.FromArgb(32, 34, 36) : System.Drawing.Color.FromArgb(245, 247, 249));
+                bd = en ? (Active ? accent : (_hov ? borderHov : border)) : (Dark ? System.Drawing.Color.FromArgb(44, 47, 50) : System.Drawing.Color.FromArgb(224, 228, 234));
+                fg = en ? (Active ? accent : fgMain) : fgDis;
+            }
+
+            float ox = 0.5f, oy = (_down && en) ? 1.5f : 0.5f;
+            float rw = Width - 1.5f, rh = Height - 1.5f - ((_down && en) ? 1f : 0f);
+            if (drawFill || bd.A > 0)
+            {
+                using (System.Drawing.Drawing2D.GraphicsPath gp = AkDraw.RoundRect(ox, oy, rw, rh, Radius))
+                {
+                    if (drawFill) using (System.Drawing.SolidBrush br = new System.Drawing.SolidBrush(bg)) g.FillPath(br, gp);
+                    if (bd.A > 0) using (System.Drawing.Pen p = new System.Drawing.Pen(bd, 1f)) g.DrawPath(p, gp);
+                }
+            }
+            if (Kind == AkKind.Tab && Active)
+            {
+                using (System.Drawing.SolidBrush ab = new System.Drawing.SolidBrush(accent))
+                    g.FillRectangle(ab, 6, Height - 3, System.Math.Max(8, Width - 12), 2.5f);
+            }
+
+            string txt = Text ?? "";
+            float yShift = (_down && en) ? 1f : 0f;
+            if (Icon != AkIcon.None && txt.Length == 0)
+            {
+                AkDraw.DrawIcon(g, Icon, Width * 0.5f, Height * 0.5f + yShift, 13.5f, fg);
+            }
+            else if (Icon != AkIcon.None)
+            {
+                System.Drawing.Size ts = System.Windows.Forms.TextRenderer.MeasureText(txt, Font, new System.Drawing.Size(Width, Height), System.Windows.Forms.TextFormatFlags.NoPrefix | System.Windows.Forms.TextFormatFlags.NoPadding);
+                float iconW = 13f, gap = 6f;
+                float totalW = iconW + gap + ts.Width;
+                float startX = System.Math.Max(8f, (Width - totalW) * 0.5f);
+                AkDraw.DrawIcon(g, Icon, startX + iconW * 0.5f, Height * 0.5f + yShift, 12.5f, fg);
+                System.Drawing.Rectangle tr = new System.Drawing.Rectangle((int)(startX + iconW + gap), (int)yShift, System.Math.Max(10, Width - (int)(startX + iconW + gap) - 4), Height);
+                System.Windows.Forms.TextRenderer.DrawText(g, txt, Font, tr, fg, System.Windows.Forms.TextFormatFlags.Left | System.Windows.Forms.TextFormatFlags.VerticalCenter | System.Windows.Forms.TextFormatFlags.NoPrefix | System.Windows.Forms.TextFormatFlags.EndEllipsis);
+            }
+            else
+            {
+                System.Drawing.Rectangle tr = new System.Drawing.Rectangle(4, (int)yShift, System.Math.Max(8, Width - 8), Height);
+                System.Windows.Forms.TextRenderer.DrawText(g, txt, Font, tr, fg, System.Windows.Forms.TextFormatFlags.HorizontalCenter | System.Windows.Forms.TextFormatFlags.VerticalCenter | System.Windows.Forms.TextFormatFlags.NoPrefix | System.Windows.Forms.TextFormatFlags.EndEllipsis);
+            }
+        }
+    }
+
 }
